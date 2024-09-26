@@ -5,61 +5,88 @@
 
 // Définir la pin à laquelle le bandeau est connecté
 #define PIN 8
+#define sec() millis()/1000;
 
 // Initialiser la bande LED
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
 
-int decalage = 0;
-uint32_t magenta = strip.Color(224, 155, 0);
+uint32_t magenta = strip.Color(255, 0, 255);
+uint32_t red = strip.Color(255, 0, 0);
+uint32_t blue = strip.Color(0, 0, 255);
 uint32_t black = strip.Color(0, 0, 0);
 uint32_t white = strip.Color(255, 255, 255);
+
 int R;
 int G;
 int B;
 
-int H = 0;
-float S = 1;
-float Bri = 1;
-float c = 10000;
-bool state = true;
+float H;
+float S;
+float Bri;
+
+int counter = 0;
+
+void rainbow(float);
+void droplets(float, int, int, int);
 
 void setup() {
   // Initialisation du bandeau LED
   Serial.begin(9600);
   strip.begin();
+  strip.fill(black);
   strip.show();  // Éteindre toutes les LED au démarrage
 }
 
+
 void loop() {
-  // Allumer toutes les LED en bleu (R, G, B -> 0, 0, 255)
-  strip.fill(black);
 
-
-
-  for (int i = c; i < c + 10; i++) {
-    for (int d = 0; d < 300; d += 25) {
-      HSBtoRGB(H - d, S, Bri, R, G, B);
-      magenta = strip.Color(R, G, B);
-
-
-      strip.setPixelColor((i - d) % NUM_LEDS, magenta);
-    }
-  }
-
-  strip.show();  // Envoyer les couleurs mises à jour au bandeau
-  //delay(30);
-  H = (H + 6) % 360;
-  c = c - 1;
-  state = !state;
-  //Bri = (cos(c)+1)/2;
-  // Attendre une seconde
+  droplets(20, 20, 30, 4);
+  strip.show();
+  
 }
 
-// Fonction pour convertir HSV en RGB
+void droplets(float freq, int length = 10, int space = 50, int fading = 4){
+  long time = freq * sec();
+  for (int i = 0; i < NUM_LEDS; i+=space){
+    for (int j = 0; j < length; j++) {
+      HSBtoRGB(180, 1, pow(((1.0f/length)*j),fading), R, G, B);
+      strip.setPixelColor(fmod(i+j+time, NUM_LEDS), strip.Color(R, G, B));
+    }
+  }
+}
+
+void rainbow(float start_hue = 0){
+  for (int i = 0; i < NUM_LEDS; i++){
+    HSBtoRGB(fmod(start_hue + (i * 360.0f / NUM_LEDS), 360) , 1, 1, R, G, B);
+    strip.setPixelColor(i, strip.Color(R, G, B));
+  }
+}
+
+void mooving_rainbow(float freq, float start_hue) {
+  long time = freq * sec();
+  rainbow(start_hue + time);
+
+}
+
+void fill(int red, int green, int blue) {
+    strip.fill(strip.Color(red, green, blue));
+  
+}
+
+void fill(uint32_t color) {
+  strip.fill(color);
+}
+
+/*void breathe(float period, ) {
+
+}*/
+// Fonction pour convertir HSV(360,1,1) en RGB(255, 255, 255)
+#include <math.h>  // Pour utiliser fabs() et fmod()
+
 void HSBtoRGB(float H, float S, float B, int &r, int &g, int &b) {
-  float C = B * S;
-  float X = C * (1 - abs(fmod(H / 60.0, 2) - 1));
-  float m = B - C;
+  float C = B * S;  // Chroma
+  float X = C * (1 - fabs(fmod(H / 60.0, 2) - 1));  // Composante intermédiaire
+  float m = B - C;  // Ajustement avec la luminosité minimale
 
   float r1, g1, b1;
 
@@ -90,7 +117,7 @@ void HSBtoRGB(float H, float S, float B, int &r, int &g, int &b) {
   }
 
   // Convertir les valeurs de [0,1] à [0,255] et ajuster avec m
-  r = (r1 + m) * 255;
-  g = (g1 + m) * 255;
-  b = (b1 + m) * 255;
+  r = round((r1 + m) * 255);
+  g = round((g1 + m) * 255);
+  b = round((b1 + m) * 255);
 }
