@@ -25,6 +25,8 @@ float H;
 float S;
 float Bri;
 
+int mode = 0;
+
 int counter = 0;
 
 void rainbow(float);
@@ -42,12 +44,56 @@ void setup() {
 
 void loop() {
 
-  //droplets(20, 20, 30, 4);
-  
-  bluetooth_control();
+  if (Serial.available() > 0) {
+    int commande = Serial.read();
+    Serial.println(commande);
+    mode_selection(commande);
+
+    //
+
+    //bluetooth_control();
+  }
+
+
+  switch (mode) {
+    case 0:
+      strip.clear();
+      break;
+    case 1:
+      rainbow(0);
+      break;
+    case 2:
+      moving_rainbow(20, 0);
+      break;
+    case 3:
+      droplets(20, 20, 30, 4);
+      break;
+    default:
+      break;
+  }
   strip.show();
   delay(10);
 }
+
+void mode_selection(int commande) {
+  switch (commande) {
+    case 48:  //0
+      mode = 0;
+      break;
+    case 82:  //R
+      mode = 1;
+      break;
+    case 77:  //M
+      mode = 2;
+      break;
+    case 68:
+      mode = 3;
+      break;
+    default:
+      break;
+  }
+}
+
 
 void bluetooth_control() {
   static String command = "";
@@ -97,8 +143,9 @@ void rainbow(float start_hue = 0) {
   }
 }
 
-void mooving_rainbow(float freq, float start_hue) {
+void moving_rainbow(float freq, float start_hue) {
   long time = freq * sec();
+  Serial.println(time);
   rainbow(start_hue + time);
 }
 
