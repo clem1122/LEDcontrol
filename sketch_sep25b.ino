@@ -1,11 +1,12 @@
 #include <Adafruit_NeoPixel.h>
 
 // Définir le nombre de LEDs sur le bandeau
-#define NUM_LEDS 300  // Remplace par le nombre de LEDs de ton bandeau
+#define NUM_LEDS 60  // Remplace par le nombre de LEDs de ton bandeau
 
 // Définir la pin à laquelle le bandeau est connecté
 #define PIN 8
-#define sec() millis()/1000;
+#define BT_PIN 9
+#define sec() millis() / 1000;
 
 // Initialiser la bande LED
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
@@ -31,6 +32,7 @@ void droplets(float, int, int, int);
 
 void setup() {
   // Initialisation du bandeau LED
+  digitalWrite(BT_PIN, HIGH);
   Serial.begin(9600);
   strip.begin();
   strip.fill(black);
@@ -40,24 +42,57 @@ void setup() {
 
 void loop() {
 
-  droplets(20, 20, 30, 4);
-  strip.show();
+  //droplets(20, 20, 30, 4);
   
+  bluetooth_control();
+  strip.show();
+  delay(10);
 }
 
-void droplets(float freq, int length = 10, int space = 50, int fading = 4){
-  long time = freq * sec();
-  for (int i = 0; i < NUM_LEDS; i+=space){
-    for (int j = 0; j < length; j++) {
-      HSBtoRGB(180, 1, pow(((1.0f/length)*j),fading), R, G, B);
-      strip.setPixelColor(fmod(i+j+time, NUM_LEDS), strip.Color(R, G, B));
+void bluetooth_control() {
+  static String command = "";
+  while (Serial.available() > 0) {
+    char incomingByte = Serial.read();
+    if (incomingByte == '\n') {  // Détecter la fin de la commande
+      command.trim();            // Retirer les espaces inutiles
+      if (command.length() == 9) {
+        int R = command.substring(0, 3).toInt();
+        int G = command.substring(3, 6).toInt();
+        int B = command.substring(6, 9).toInt();
+
+        Serial.print("R: ");
+        Serial.println(R);
+        Serial.print("G: ");
+        Serial.println(G);
+        Serial.print("B: ");
+        Serial.println(B);
+
+        strip.fill(strip.Color(R, G, B));
+
+      } else {
+        Serial.print("Error : ");
+        Serial.println(command);
+      }
+      command = "";  // Réinitialiser la commande pour la prochaine lecture
+    } else {
+      command += incomingByte;  // Ajouter le caractère à la commande
     }
   }
 }
 
-void rainbow(float start_hue = 0){
-  for (int i = 0; i < NUM_LEDS; i++){
-    HSBtoRGB(fmod(start_hue + (i * 360.0f / NUM_LEDS), 360) , 1, 1, R, G, B);
+void droplets(float freq, int length = 10, int space = 50, int fading = 4) {
+  long time = freq * sec();
+  for (int i = 0; i < NUM_LEDS; i += space) {
+    for (int j = 0; j < length; j++) {
+      HSBtoRGB(180, 1, pow(((1.0f / length) * j), fading), R, G, B);
+      strip.setPixelColor(fmod(i + j + time, NUM_LEDS), strip.Color(R, G, B));
+    }
+  }
+}
+
+void rainbow(float start_hue = 0) {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    HSBtoRGB(fmod(start_hue + (i * 360.0f / NUM_LEDS), 360), 1, 1, R, G, B);
     strip.setPixelColor(i, strip.Color(R, G, B));
   }
 }
@@ -65,12 +100,10 @@ void rainbow(float start_hue = 0){
 void mooving_rainbow(float freq, float start_hue) {
   long time = freq * sec();
   rainbow(start_hue + time);
-
 }
 
 void fill(int red, int green, int blue) {
-    strip.fill(strip.Color(red, green, blue));
-  
+  strip.fill(strip.Color(red, green, blue));
 }
 
 void fill(uint32_t color) {
@@ -84,9 +117,9 @@ void fill(uint32_t color) {
 #include <math.h>  // Pour utiliser fabs() et fmod()
 
 void HSBtoRGB(float H, float S, float B, int &r, int &g, int &b) {
-  float C = B * S;  // Chroma
+  float C = B * S;                                  // Chroma
   float X = C * (1 - fabs(fmod(H / 60.0, 2) - 1));  // Composante intermédiaire
-  float m = B - C;  // Ajustement avec la luminosité minimale
+  float m = B - C;                                  // Ajustement avec la luminosité minimale
 
   float r1, g1, b1;
 
