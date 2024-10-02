@@ -1,7 +1,9 @@
 #include <Adafruit_NeoPixel.h>
-
+#include <SoftwareSerial.h>
 // Définir le nombre de LEDs sur le bandeau
-#define NUM_LEDS 60  // Remplace par le nombre de LEDs de ton bandeau
+#define NUM_LEDS 300  // Remplace par le nombre de LEDs de ton bandeau
+
+SoftwareSerial BT(10, 11); //RX, TX
 
 // Définir la pin à laquelle le bandeau est connecté
 #define PIN 8
@@ -35,7 +37,10 @@ void droplets(float, int, int, int);
 void setup() {
   // Initialisation du bandeau LED
   digitalWrite(BT_PIN, HIGH);
+
   Serial.begin(9600);
+  BT.begin(9600);
+
   strip.begin();
   strip.fill(black);
   strip.show();  // Éteindre toutes les LED au démarrage
@@ -44,8 +49,9 @@ void setup() {
 
 void loop() {
 
-  if (Serial.available() > 0) {
-    int commande = Serial.read();
+  
+  if (BT.available() > 0) {
+    int commande = BT.read();
     Serial.println(commande);
     mode_selection(commande);
 
@@ -71,6 +77,7 @@ void loop() {
     default:
       break;
   }
+  //strip.setBrightness(120);
   strip.show();
   delay(10);
 }
