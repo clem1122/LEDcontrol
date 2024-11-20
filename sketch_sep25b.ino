@@ -3,12 +3,12 @@
 // Définir le nombre de LEDs sur le bandeau
 #define NUM_LEDS 300  // Remplace par le nombre de LEDs de ton bandeau
 
-SoftwareSerial BT(10, 11); //RX, TX
+SoftwareSerial BT(10, 11);  //RX, TX
 
 // Définir la pin à laquelle le bandeau est connecté
 #define PIN 8
 #define BT_PIN 9
-#define sec() millis() / 1000;
+#define sec() millis() / 1000.0;
 
 // Initialiser la bande LED
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
@@ -18,6 +18,7 @@ uint32_t red = strip.Color(255, 0, 0);
 uint32_t blue = strip.Color(0, 0, 255);
 uint32_t black = strip.Color(0, 0, 0);
 uint32_t white = strip.Color(255, 255, 255);
+uint32_t current_color;
 
 int R;
 int G;
@@ -49,15 +50,10 @@ void setup() {
 
 void loop() {
 
-  
+
   if (BT.available() > 0) {
     int commande = BT.read();
-    Serial.println(commande);
     mode_selection(commande);
-
-    //
-
-    //bluetooth_control();
   }
 
 
@@ -74,38 +70,51 @@ void loop() {
     case 3:
       droplets(20, 20, 30, 4);
       break;
+    case 4:
+      breathe(0.5, current_color);
+      break;
     default:
       break;
   }
-  //strip.setBrightness(120);
+
   strip.show();
   delay(10);
 }
 
 void mode_selection(int commande) {
+  strip.setBrightness(255);
   switch (commande) {
     case 48:  //0
+      Serial.println("OFF");
       mode = 0;
       break;
     case 82:  //R
+      Serial.println("Rainbow");
       mode = 1;
       break;
     case 77:  //M
+      Serial.println("Moving Rainbow");
       mode = 2;
       break;
-    case 68:
+    case 68:  // D
+      Serial.println("Droplets");
       mode = 3;
       break;
+    case 66: // B
+      current_color = strip.getPixelColor(0);
+      mode = 4;
     default:
+      Serial.print("Unknown command");
+      Serial.println(commande);
       break;
   }
 }
 
 
-void bluetooth_control() {
+void bluetooth_RGB() {
   static String command = "";
-  while (Serial.available() > 0) {
-    char incomingByte = Serial.read();
+  while (BT.available() > 0) {
+    char incomingByte = BT.read();
     if (incomingByte == '\n') {  // Détecter la fin de la commande
       command.trim();            // Retirer les espaces inutiles
       if (command.length() == 9) {
@@ -127,7 +136,10 @@ void bluetooth_control() {
         Serial.println(command);
       }
       command = "";  // Réinitialiser la commande pour la prochaine lecture
-    } else {
+    } else if(incomingByte == 'B') {
+      mode = 0;
+    }
+    else {
       command += incomingByte;  // Ajouter le caractère à la commande
     }
   }
@@ -164,9 +176,13 @@ void fill(uint32_t color) {
   strip.fill(color);
 }
 
-/*void breathe(float period, ) {
+void breathe(float freq, uint32_t color) {
+    long time = freq * sec();
+    strip.fill(color);
+    uint8_t brightness = 255 * int((cos(2*PI*freq*time)+1)/2);
+    strip.setBrightness(brightness); //(cos(2*PI*freq*time)+1)
+}
 
-}*/
 // Fonction pour convertir HSV(360,1,1) en RGB(255, 255, 255)
 #include <math.h>  // Pour utiliser fabs() et fmod()
 
