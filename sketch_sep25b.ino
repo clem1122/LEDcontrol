@@ -8,13 +8,14 @@ SoftwareSerial BT(10, 11);  //RX, TX
 // Définir la pin à laquelle le bandeau est connecté
 #define PIN 8
 #define BT_PIN 9
-#define sec() millis() / 1000.0;
+#define sec() millis() / 1000.0
 
 // Initialiser la bande LED
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
 
 uint32_t magenta = strip.Color(255, 0, 255);
 uint32_t red = strip.Color(255, 0, 0);
+uint32_t green = strip.Color(0, 255, 0);
 uint32_t blue = strip.Color(0, 0, 255);
 uint32_t black = strip.Color(0, 0, 0);
 uint32_t white = strip.Color(255, 255, 255);
@@ -58,9 +59,8 @@ void loop() {
 
 
   switch (mode) {
-    case 0:
-      strip.clear();
-      break;
+
+    
     case 1:
       rainbow(0);
       break;
@@ -71,38 +71,105 @@ void loop() {
       droplets(20, 20, 30, 4);
       break;
     case 4:
-      breathe(0.5, current_color);
+      breathe(0.25, current_color);
+      break;
+    case 5:
+      strip.clear();
+      break;
+    case 6:
+      fill(255, 0, 0);
+      break;
+    case 7:
+      fill(0, 255, 0);
+      break;
+    case 8:
+      fill(0, 0, 255);
+      break;
+    case 9:
+      fill(255, 0, 255);
+      break;
+    case 10:
+      fill(0, 255, 255);
+      break;
+    case 11:
+      fill(255, 255, 0);
+      break;
+    case 12:
+      degrade(20);
+      break;
+    case 13:
+      guirlande(1);
+      break;
+    case 14:
+      remplit();
       break;
     default:
       break;
   }
-
   strip.show();
   delay(10);
 }
 
 void mode_selection(int commande) {
   strip.setBrightness(255);
-  switch (commande) {
-    case 48:  //0
+  switch (char(commande)) {
+    case '0':
       Serial.println("OFF");
-      mode = 0;
+      mode = 5;
       break;
-    case 82:  //R
+    case 'A':
       Serial.println("Rainbow");
       mode = 1;
       break;
-    case 77:  //M
+    case 'J':  //M
       Serial.println("Moving Rainbow");
       mode = 2;
       break;
-    case 68:  // D
+    case 'E':  // D
       Serial.println("Droplets");
       mode = 3;
       break;
-    case 66: // B
+    case 'F': // B
+      Serial.println("Breathe");
       current_color = strip.getPixelColor(0);
       mode = 4;
+      break;
+    case 'R':
+    Serial.println("Rouge");
+      mode = 6;
+      break;
+    case 'G':
+    Serial.println("Vert");
+      mode = 7;
+      break;
+    case 'B':
+    Serial.println("Bleu");
+      mode = 8;
+      break;
+    case 'M':
+    Serial.println("Magenta");
+      mode = 9;
+      break;
+    case 'C':
+    Serial.println("Cyan");
+      mode = 10;
+      break;
+    case 'Y':
+    Serial.println("Yellow");
+      mode = 11;
+      break;
+    case 'D':
+    Serial.println("Dégradé");
+      mode = 12;
+      break;
+    case 'H':
+    Serial.println("Guirlande");
+      mode = 13;
+      break;
+    case 'S':
+    Serial.println("Remplit");
+      mode = 14;
+      break;
     default:
       Serial.print("Unknown command");
       Serial.println(commande);
@@ -154,6 +221,25 @@ void droplets(float freq, int length = 10, int space = 50, int fading = 4) {
     }
   }
 }
+void degrade(float freq) {
+  long time = freq * sec();
+  HSBtoRGB(fmod(time, 360), 1, 1, R, G, B);
+  strip.fill(strip.Color(R, G, B));
+  
+}
+
+void guirlande(float freq){
+  long time = freq * sec();
+  int step = 5;
+  //Serial.print(fmod(time);
+  bool flip = (fmod(time, 2) > 0.5);
+  for (int i = 0; i < NUM_LEDS-step; i += 2*step) {
+    for (int j = 0; j < step; j++){
+      strip.setPixelColor(i + j + step * flip, red);
+      strip.setPixelColor(i + j + step * !flip, green);
+    }
+  }
+}
 
 void rainbow(float start_hue = 0) {
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -168,6 +254,8 @@ void moving_rainbow(float freq, float start_hue) {
   rainbow(start_hue + time);
 }
 
+void remplit(){}
+
 void fill(int red, int green, int blue) {
   strip.fill(strip.Color(red, green, blue));
 }
@@ -177,9 +265,8 @@ void fill(uint32_t color) {
 }
 
 void breathe(float freq, uint32_t color) {
-    long time = freq * sec();
     strip.fill(color);
-    uint8_t brightness = 255 * int((cos(2*PI*freq*time)+1)/2);
+    uint8_t brightness = 245 * (cos(2*PI*freq*sec())+1)/2.0 + 10;
     strip.setBrightness(brightness); //(cos(2*PI*freq*time)+1)
 }
 

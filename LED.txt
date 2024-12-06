@@ -1,0 +1,15 @@
+1 : AEC : A
+2 : AECD : J
+3 : Gouttes : E
+4 : Respire : F
+5 : OFF : 0
+6 : R
+7 : G
+8 : B
+9 : M
+10 : C
+11 : Y
+12 : Dégradé : D
+13 : Guirlande : H
+14 : Remplit : S
+
